@@ -25,7 +25,4 @@ def index(request):
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('rugs_app.urls')),
-
-    # Forward any other URLS to client-side routing
-    re_path(r"^(?:.*)/?$", index, name="index"),
 ]

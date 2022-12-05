@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, serializers
+from rest_framework.authtoken.models import Token
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.parsers import JSONParser, FormParser
 from rest_framework.response import Response
@@ -47,8 +48,10 @@ class RegisterUserView(generics.CreateAPIView):
         response = super().create(request, *args, **kwargs)
         user = authenticate(request, username=request.data.get("username"), password=request.data.get("password"))
         if user is not None:
-            login(request, user)
-            return response
+            token, created = Token.objects.get_or_create(user=user)
+            return Response({
+                "token": token.key
+            })
         raise serializers.ValidationError({
             "error": "cannot register"
         })
@@ -61,8 +64,10 @@ class LoginUserView(APIView):
     def post(self, request):
         user = authenticate(request, username=request.data.get("username"), password=request.data.get("password"))
         if user is not None:
-            login(request, user)
-            return Response("Successful login")
+            token, created = Token.objects.get_or_create(user=user)
+            return Response({
+                "token": token.key
+            })
         raise serializers.ValidationError({
             "error": "cannot login"
         })
