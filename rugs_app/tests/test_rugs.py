@@ -20,12 +20,18 @@ class RugsViewTest(TestCase):
         cls.superuser = User.objects.create_superuser(username="admin", email="admin@gmail.com", password="admin")
         cls.regular_user = User.objects.create_user(username="test", email="test@gmail.com", password="test")
 
+    def login_as_user(self, username, password):
+        response = self.client.post(
+            "/api/login",
+            {"username": username, "password": password},
+            "application/json"
+        )
+        return response.json()["token"]
+    
     def test_get_all_rugs(self):
         all_rugs_response = self.client.get("/api/rug")
         self.assertEqual(all_rugs_response.status_code, 200)
         self.assertEqual(all_rugs_response.json()["count"], 4)
-
-        test_response = self.client.get(f"/api/rug")
 
     def test_create_rug_not_authenticated(self):
         create_rug_response = self.client.post(
@@ -33,19 +39,20 @@ class RugsViewTest(TestCase):
             {"title": "Test5", "description": "Testing5", "price": "3.99"},
             "application/json"
         )
-        self.assertEqual(create_rug_response.status_code, 403)
+        self.assertEqual(create_rug_response.status_code, 401)
 
         all_rugs_response = self.client.get("/api/rug")
         self.assertEqual(all_rugs_response.status_code, 200)
         self.assertEqual(all_rugs_response.json()["count"], 4)
 
     def test_create_rug_regular_user(self):
-        self.client.login(username=self.regular_user.username, password="test")
+        token = self.login_as_user(username=self.regular_user.username, password="test")
 
         create_rug_response = self.client.post(
             "/api/rug",
             {"title": "Test5", "description": "Testing5", "price": "3.99"},
-            "application/json"
+            "application/json",
+            HTTP_AUTHORIZATION=f"Token {token}"
         )
         self.assertEqual(create_rug_response.status_code, 403)
 
@@ -54,16 +61,17 @@ class RugsViewTest(TestCase):
         self.assertEqual(all_rugs_response.json()["count"], 4)
 
     def test_create_rug_admin(self):
-        self.client.login(username=self.superuser.username, password="admin")
+        token = self.login_as_user(username=self.superuser.username, password="admin")
 
         create_rug_response = self.client.post(
             "/api/rug",
             {"title": "Test5", "description": "Testing5", "price": "3.99"},
-            "application/json"
+            "application/json",
+            HTTP_AUTHORIZATION=f"Token {token}"
         )
         self.assertEqual(create_rug_response.status_code, 201)
 
-        all_rugs_response = self.client.get("/api/rug")
+        all_rugs_response = self.client.get("/api/rug", HTTP_AUTHORIZATION=f"Token {token}")
         self.assertEqual(all_rugs_response.status_code, 200)
         self.assertEqual(all_rugs_response.json()["count"], 5)
 
@@ -84,19 +92,20 @@ class RugsViewTest(TestCase):
             {"title": "NewTitle"},
             "application/json"
         )
-        self.assertEqual(modify_rug_response.status_code, 403)
+        self.assertEqual(modify_rug_response.status_code, 401)
 
         rug_response = self.client.get(f"/api/rug/{self.rugs[0].pk}")
         self.assertEqual(rug_response.status_code, 200)
         self.assertEqual(rug_response.json()["title"], "Test1")
 
     def test_modify_rug_regular_user(self):
-        self.client.login(username=self.regular_user.username, password="test")
+        token = self.login_as_user(username=self.regular_user.username, password="test")
 
         modify_rug_response = self.client.patch(
             f"/api/rug/{self.rugs[0].pk}",
             {"title": "NewTitle"},
-            "application/json"
+            "application/json",
+            HTTP_AUTHORIZATION=f"Token {token}"
         )
         self.assertEqual(modify_rug_response.status_code, 403)
 
@@ -105,16 +114,17 @@ class RugsViewTest(TestCase):
         self.assertEqual(rug_response.json()["title"], "Test1")
 
     def test_modify_rug_admin(self):
-        self.client.login(username=self.superuser.username, password="admin")
+        token = self.login_as_user(username=self.superuser.username, password="admin")
 
         modify_rug_response = self.client.patch(
             f"/api/rug/{self.rugs[0].pk}",
             {"title": "NewTitle"},
-            "application/json"
+            "application/json",
+            HTTP_AUTHORIZATION=f"Token {token}"
         )
         self.assertEqual(modify_rug_response.status_code, 200)
 
-        rug_response = self.client.get(f"/api/rug/{self.rugs[0].pk}")
+        rug_response = self.client.get(f"/api/rug/{self.rugs[0].pk}", HTTP_AUTHORIZATION=f"Token {token}")
         self.assertEqual(rug_response.status_code, 200)
         self.assertEqual(rug_response.json()["title"], "NewTitle")
 
@@ -122,35 +132,37 @@ class RugsViewTest(TestCase):
         delete_rug_response = self.client.delete(
             f"/api/rug/{self.rugs[0].pk}"
         )
-        self.assertEqual(delete_rug_response.status_code, 403)
+        self.assertEqual(delete_rug_response.status_code, 401)
 
         rug_response = self.client.get(f"/api/rug/{self.rugs[0].pk}")
         self.assertEqual(rug_response.status_code, 200)
         self.assertIsNotNone(rug_response.json())
 
     def test_delete_rug_regular_user(self):
-        self.client.login(username=self.regular_user.username, password="test")
+        token = self.login_as_user(username=self.regular_user.username, password="test")
 
         delete_rug_response = self.client.delete(
-            f"/api/rug/{self.rugs[0].pk}"
+            f"/api/rug/{self.rugs[0].pk}",
+            HTTP_AUTHORIZATION=f"Token {token}"
         )
         self.assertEqual(delete_rug_response.status_code, 403)
 
-        rug_response = self.client.get(f"/api/rug/{self.rugs[0].pk}")
+        rug_response = self.client.get(f"/api/rug/{self.rugs[0].pk}", HTTP_AUTHORIZATION=f"Token {token}")
         self.assertEqual(rug_response.status_code, 200)
         self.assertIsNotNone(rug_response.json())
 
     def test_delete_rug_admin(self):
-        self.client.login(username=self.superuser.username, password="admin")
+        token = self.login_as_user(username=self.superuser.username, password="admin")
 
         delete_rug_response = self.client.delete(
             f"/api/rug/{self.rugs[0].pk}",
+            HTTP_AUTHORIZATION=f"Token {token}"
         )
         self.assertEqual(delete_rug_response.status_code, 204)
 
-        rug_response = self.client.get(f"/api/rug/{self.rugs[0].pk}")
+        rug_response = self.client.get(f"/api/rug/{self.rugs[0].pk}", HTTP_AUTHORIZATION=f"Token {token}")
         self.assertEqual(rug_response.status_code, 404)
 
-        all_rugs_response = self.client.get("/api/rug")
+        all_rugs_response = self.client.get("/api/rug", HTTP_AUTHORIZATION=f"Token {token}")
         self.assertEqual(all_rugs_response.status_code, 200)
         self.assertEqual(all_rugs_response.json()["count"], 3)

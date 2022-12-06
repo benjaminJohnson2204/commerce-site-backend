@@ -22,19 +22,19 @@ class AuthenticationViewTest(TestCase):
                 "receive_emails_new_rugs": "True"},
             "application/json"
         )
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(response.json()["receive_emails_order_updates"], False)
-        self.assertEqual(response.json()["receive_emails_new_rugs"], True)
+        self.assertContains(response, "token")
+        token = response.json()["token"]
 
-        authenticated_response = self.client.get("/api/authenticated")
+        authenticated_response = self.client.get("/api/authenticated", HTTP_AUTHORIZATION=f"Token {token}")
         self.assertEqual(authenticated_response.status_code, 200)
 
-        logout_response = self.client.post("/api/logout")
-        self.assertEqual(logout_response.status_code, 200)
+        logout_response = self.client.post("/api/logout", HTTP_AUTHORIZATION=f"Token {token}")
+        self.assertEqual(logout_response.status_code, 204)
 
-        authenticated_response = self.client.get("/api/authenticated")
-        self.assertEqual(authenticated_response.status_code, 403)
+        authenticated_response = self.client.get("/api/authenticated", HTTP_AUTHORIZATION=f"Token {token}")
+        self.assertEqual(authenticated_response.status_code, 401)
 
     def test_register_existing_username(self):
         response = self.client.post(
@@ -91,14 +91,17 @@ class AuthenticationViewTest(TestCase):
         )
         self.assertEqual(response.status_code, 200)
 
-        authenticated_response = self.client.get("/api/authenticated")
+        self.assertContains(response, "token")
+        token = response.json()["token"]
+
+        authenticated_response = self.client.get("/api/authenticated", HTTP_AUTHORIZATION=f"Token {token}")
         self.assertEqual(authenticated_response.status_code, 200)
 
-        logout_response = self.client.post("/api/logout")
-        self.assertEqual(logout_response.status_code, 200)
+        logout_response = self.client.post("/api/logout", HTTP_AUTHORIZATION=f"Token {token}")
+        self.assertEqual(logout_response.status_code, 204)
 
-        authenticated_response = self.client.get("/api/authenticated")
-        self.assertEqual(authenticated_response.status_code, 403)
+        authenticated_response = self.client.get("/api/authenticated", HTTP_AUTHORIZATION=f"Token {token}")
+        self.assertEqual(authenticated_response.status_code, 401)
 
     def test_login_invalid_username(self):
         response = self.client.post(
@@ -109,7 +112,7 @@ class AuthenticationViewTest(TestCase):
         self.assertEqual(response.status_code, 400)
 
         authenticated_response = self.client.get("/api/authenticated")
-        self.assertEqual(authenticated_response.status_code, 403)
+        self.assertEqual(authenticated_response.status_code, 401)
 
     def test_login_invalid_password(self):
         response = self.client.post(
@@ -120,7 +123,7 @@ class AuthenticationViewTest(TestCase):
         self.assertEqual(response.status_code, 400)
 
         authenticated_response = self.client.get("/api/authenticated")
-        self.assertEqual(authenticated_response.status_code, 403)
+        self.assertEqual(authenticated_response.status_code, 401)
 
     def test_login_missing_fields(self):
         for data in [
@@ -136,7 +139,7 @@ class AuthenticationViewTest(TestCase):
             self.assertEqual(response.status_code, 400)
 
             authenticated_response = self.client.get("/api/authenticated")
-            self.assertEqual(authenticated_response.status_code, 403)
+            self.assertEqual(authenticated_response.status_code, 401)
 
     def test_verify_password_not_authenticated(self):
         response = self.client.post(
@@ -144,32 +147,41 @@ class AuthenticationViewTest(TestCase):
             {"password": "password"},
             "application/json"
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_valid_verify_password(self):
-        self.client.post(
+        response = self.client.post(
             "/api/login",
             {"username": "takenUsername", "password": "password"},
             "application/json"
         )
+
+        self.assertContains(response, "token")
+        token = response.json()["token"]
         response = self.client.post(
             "/api/verify-password",
             {"password": "password"},
-            "application/json"
+            "application/json",
+            HTTP_AUTHORIZATION=f"Token {token}"
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["password"], "Valid password")
 
     def test_invalid_verify_password(self):
-        self.client.post(
+        response = self.client.post(
             "/api/login",
             {"username": "takenUsername", "password": "password"},
             "application/json"
         )
+
+        self.assertContains(response, "token")
+        token = response.json()["token"]
+
         response = self.client.post(
             "/api/verify-password",
             {"password": "notMyPassword"},
-            "application/json"
+            "application/json",
+            HTTP_AUTHORIZATION=f"Token {token}"
         )
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["password"], "Invalid password")
