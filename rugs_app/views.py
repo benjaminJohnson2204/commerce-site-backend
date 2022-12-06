@@ -1,4 +1,5 @@
 import django
+import knox.views
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.views import LoginView
 from django.core.mail import send_mass_mail
@@ -10,9 +11,12 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django_filters.rest_framework import DjangoFilterBackend
+from knox.models import AuthToken
 from rest_framework import generics, serializers
 from rest_framework.authtoken.models import Token
+from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.generics import GenericAPIView
 from rest_framework.parsers import JSONParser, FormParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -45,12 +49,12 @@ class RegisterUserView(generics.CreateAPIView):
             raise serializers.ValidationError({
                 "password": "Passwords don't match"
             })
-        response = super().create(request, *args, **kwargs)
+        super().create(request, *args, **kwargs)
         user = authenticate(request, username=request.data.get("username"), password=request.data.get("password"))
         if user is not None:
-            token, created = Token.objects.get_or_create(user=user)
+            token = AuthToken.objects.create(user)
             return Response({
-                "token": token.key
+                "token": token[1]
             })
         raise serializers.ValidationError({
             "error": "cannot register"
@@ -62,11 +66,11 @@ class LoginUserView(APIView):
     serializer_class = UserSerializer
 
     def post(self, request):
-        user = authenticate(request, username=request.data.get("username"), password=request.data.get("password"))
+        user = authenticate(request, **request.data)
         if user is not None:
-            token, created = Token.objects.get_or_create(user=user)
+            token = AuthToken.objects.create(user)
             return Response({
-                "token": token.key
+                "token": token[1]
             })
         raise serializers.ValidationError({
             "error": "cannot login"

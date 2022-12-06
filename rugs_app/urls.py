@@ -1,3 +1,4 @@
+import knox
 from django.contrib.auth.views import LogoutView, LoginView
 from rest_framework.authtoken.views import obtain_auth_token
 from django.urls import path, re_path
@@ -8,7 +9,7 @@ urlpatterns = [
     # Authentication
     path("register", views.RegisterUserView.as_view(), name="register"),
     path("login", views.LoginUserView.as_view(), name="login"),
-    path("logout", LogoutView.as_view(), name="logout"),
+    path("logout", knox.views.LogoutView.as_view(), name="logout"),
     path("verify-password", views.VerifyPasswordView.as_view(), name="verify-password"),
     path("authenticated", views.AuthenticatedView.as_view(), name="authenticated"),
     path("user", views.UserView.as_view(), name="user"),

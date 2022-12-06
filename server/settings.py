@@ -60,7 +60,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework.authtoken'
+    'knox',
 ]
 
 MIDDLEWARE = [
@@ -89,7 +89,7 @@ AUTHENTICATION_BACKENDS = (
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
+        'knox.auth.TokenAuthentication',
     ],
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend'
@@ -106,6 +106,10 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rugs_app.pagination.MyPagination',
     'PAGE_SIZE': 10
+}
+
+REST_KNOX = {
+    "USER_SERIALIZER": "rugs_app.views.UserSerializer"
 }
 
 ROOT_URLCONF = 'server.urls'
