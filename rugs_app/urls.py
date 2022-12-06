@@ -1,9 +1,23 @@
 import knox
 from django.contrib.auth.views import LogoutView, LoginView
+from drf_yasg import openapi
+from drf_yasg.views import get_schema_view
+from rest_framework import permissions
 from rest_framework.authtoken.views import obtain_auth_token
 from django.urls import path, re_path
 
 from . import views
+
+schema_view = get_schema_view(
+    openapi.Info(
+      title="Commerce Site API",
+      default_version="v1",
+      description="Backend for the E-commerce website I made"
+    ),
+    public=True,
+    permission_classes=[permissions.AllowAny],
+    authentication_classes=[knox.auth.TokenAuthentication]
+)
 
 urlpatterns = [
     # Authentication
@@ -26,5 +40,8 @@ urlpatterns = [
     # Cart
     path("cart", views.CartListView.as_view(), name="cart"),
     path("cart/<int:pk>", views.CartDetailView.as_view(), name="cart_detail"),
-    path("cart/size", views.CartSizeView.as_view(), name="cart_size")
+    path("cart/size", views.CartSizeView.as_view(), name="cart_size"),
+
+    # Swagger
+    re_path(r'^docs/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
 ]

@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'knox',
+    'drf_yasg'
 ]
 
 MIDDLEWARE = [
@@ -110,6 +111,16 @@ REST_FRAMEWORK = {
 
 REST_KNOX = {
     "USER_SERIALIZER": "rugs_app.views.UserSerializer"
+}
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    }
 }
 
 ROOT_URLCONF = 'server.urls'
