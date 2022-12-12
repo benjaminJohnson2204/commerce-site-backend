@@ -37,8 +37,7 @@ paths:
   /api/cart:
     get:
       operationId: api_cart_list
-      description: Gets all rugs in a user's cart, along with the total price of the
-        rugs
+      description: Gets all rugs in a user's cart
       parameters:
       - name: page
         required: false
@@ -127,12 +126,12 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/cart/size:
+  /api/cart/price:
     get:
-      operationId: api_cart_size_retrieve
-      description: Gets the number of rugs currently in the user's cart
+      operationId: api_cart_price_retrieve
+      description: Gets the total price of all rugs in the user's cart
       tags:
-      - Cart Size
+      - Cart Price
       security:
       - TokenAuthentication: []
       responses:
@@ -140,7 +139,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CartSize'
+                $ref: '#/components/schemas/CartPrice'
           description: ''
   /api/login:
     post:
@@ -501,6 +500,33 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/rug/by-order/{id}:
+    get:
+      operationId: api_rug_by_order_list
+      description: Gets all rugs that are part of a specific order
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Rugs by Order
+      security:
+      - TokenAuthentication: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRugList'
+          description: ''
   /api/schema/:
     get:
       operationId: api_schema_retrieve
@@ -710,13 +736,15 @@ components:
       - password
       - token
       - username
-    CartSize:
+    CartPrice:
       type: object
       properties:
-        size:
-          type: integer
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
       required:
-      - size
+      - price
     Order:
       type: object
       properties:

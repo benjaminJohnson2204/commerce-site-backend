@@ -21,6 +21,7 @@ urlpatterns = [
     # Rugs
     path("rug", views.RugsListView.as_view(), name="all_rugs"),
     path("rug/<int:pk>", views.RugsDetailView.as_view(), name="rug_detail"),
+    path("rug/by-order/<int:pk>", views.RugsByOrderView.as_view(), name="rugs_by_order"),
 
     # Orders
     path("order", views.OrderListView.as_view(), name="all_orders"),
@@ -29,7 +30,7 @@ urlpatterns = [
     # Cart
     path("cart", views.CartListView.as_view(), name="cart"),
     path("cart/<int:pk>", views.CartDetailView.as_view(), name="cart_detail"),
-    path("cart/size", views.CartSizeView.as_view(), name="cart_size"),
+    path("cart/price", views.CartPriceView.as_view(), name="cart_price"),
 
     # Swagger
     re_path(r'^schema/', SpectacularAPIView.as_view(), name="schema"),

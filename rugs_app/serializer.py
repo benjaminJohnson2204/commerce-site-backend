@@ -76,7 +76,6 @@ class RugSerializer(serializers.ModelSerializer):
             f"There is a new rug, \"{validated_data['title']}\", available to purchase! To see this rug, visit "
             f"{settings.CSRF_TRUSTED_ORIGINS[0]}/rug/{rug.id}", settings.DEFAULT_FROM_EMAIL, [user.email])
             for user in User.objects.all() if user.receive_emails_new_rugs)
-        print(email_messages)
         send_mass_mail(email_messages, fail_silently=False)
         return rug
 
@@ -100,10 +99,10 @@ class VerifyPasswordRequestSerializer(serializers.Serializer):
     password = serializers.CharField(max_length=128)
 
 
-class CartSize:
-    def __init__(self, size):
-        self.size = size
+class CartPrice:
+    def __init__(self, price):
+        self.price = price
 
 
-class CartSizeSerializer(serializers.Serializer):
-    size = serializers.IntegerField()
+class CartPriceSerializer(serializers.Serializer):
+    price = serializers.DecimalField(max_digits=6, decimal_places=2)

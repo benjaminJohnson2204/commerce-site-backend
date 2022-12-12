@@ -28,7 +28,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission
 from .models import User, Order, Rug
 
 from .serializer import RegisterSerializer, UserSerializer, RugSerializer, OrderSerializer, VerifyPasswordSerializer, \
-    CartSizeSerializer, VerifyPassword, CartSize, VerifyPasswordRequestSerializer
+    VerifyPassword, VerifyPasswordRequestSerializer, CartPriceSerializer, CartPrice
 from django.conf import settings
 
 
@@ -284,20 +284,7 @@ class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
         description="Gets an order by its ID; only allowed if it is the user's order or the user is an admin"
     )
     def get(self, request, pk):
-        try:
-            order = Order.objects.get(pk=pk)
-        except Order.DoesNotExist:
-            return JsonResponse({}, status=404)
-
-        if order.user != request.user and not request.user.is_staff:
-            return JsonResponse({}, status=403)
-
-        order_serializer = OrderSerializer(order)
-        rugs_serializer = RugSerializer(Rug.objects.filter(id__in=order_serializer.data["rugs"]), many=True)
-        return JsonResponse({
-            "order": order_serializer.data,
-            "rugs": rugs_serializer.data
-        })
+        return super().get(request, pk)
 
     @extend_schema(
         description="Updates an order by its ID; only allowed if it is the user's order or the user is an admin"
@@ -321,6 +308,27 @@ class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
         return super().delete(request, *args, **kwargs)
 
 
+class RugsByOrderView(generics.ListAPIView):
+    permission_classes = (IsAdminOrOwnsOrder,)
+    queryset = Rug.objects.all()
+    serializer_class = RugSerializer
+
+    def get_queryset(self):
+        order = Order.objects.get(pk=self.kwargs.get("pk"))
+        order_serializer = OrderSerializer(order)
+        return self.queryset.filter(id__in=order_serializer.data.get("rugs"))
+
+    @extend_schema(
+        tags=["Rugs by Order"],
+        description="Gets all rugs that are part of a specific order"
+    )
+    def get(self, request, *args, **kwargs):
+        order = Order.objects.get(pk=self.kwargs.get("pk"))
+        if order.user != request.user and not request.user.is_staff:
+            return JsonResponse({}, status=403)
+        return super().get(request, *args, **kwargs)
+
+
 @extend_schema(
     tags=["Cart"]
 )
@@ -333,14 +341,10 @@ class CartListView(generics.ListAPIView):
         return self.request.user.cart.all()
 
     @extend_schema(
-        description="Gets all rugs in a user's cart, along with the total price of the rugs"
+        description="Gets all rugs in a user's cart"
     )
     def get(self, request, *args, **kwargs):
-        serializer = RugSerializer(self.get_queryset(), many=True)
-        return JsonResponse({
-            "cart": serializer.data,
-            "price": sum(rug.price for rug in request.user.cart.all())
-        })
+        return super().get(request, *args, **kwargs)
 
     @extend_schema(
         description="Add a rug to the user's cart"
@@ -400,16 +404,15 @@ class CartDetailView(generics.RetrieveAPIView):
         return JsonResponse({}, status=204)
 
 
-class CartSizeView(APIView):
+class CartPriceView(APIView):
     permission_classes = (IsAuthenticated,)
-    serializer_class = CartSizeSerializer
+    serializer_class = CartPriceSerializer
 
     @extend_schema(
-        tags=["Cart Size"],
-        description="Gets the number of rugs currently in the user's cart"
+        tags=["Cart Price"],
+        description="Gets the total price of all rugs in the user's cart"
     )
     def get(self, request):
-        cart_size = CartSizeSerializer(CartSize(
-            size=request.user.cart.count()
-        ))
-        return Response(cart_size.data)
+        return Response(CartPriceSerializer(
+            CartPrice(price=sum(rug.price for rug in request.user.cart.all()))
+        ).data)

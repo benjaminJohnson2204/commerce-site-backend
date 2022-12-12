@@ -99,8 +99,11 @@ class RugsViewTest(TestCase):
 
         cart_response = self.client.get("/api/cart", HTTP_AUTHORIZATION=f"Token {token}")
         self.assertEqual(cart_response.status_code, 200)
-        self.assertEqual(len(cart_response.json()["cart"]), 0)
-        self.assertEqual(cart_response.json()["price"], 0)
+
+        self.assertEqual(len(cart_response.json()["results"]), 0)
+
+        cart_price_response = self.client.get("/api/cart/price", HTTP_AUTHORIZATION=f"Token {token}")
+        self.assertEqual(float(cart_price_response.json()["price"]), 0)
 
         orders_response = self.client.get("/api/order", HTTP_AUTHORIZATION=f"Token {token}")
         self.assertEqual(orders_response.status_code, 200)
@@ -124,8 +127,10 @@ class RugsViewTest(TestCase):
         cart_response = self.client.get("/api/cart", HTTP_AUTHORIZATION=f"Token {token}")
 
         self.assertEqual(cart_response.status_code, 200)
-        self.assertEqual(len(cart_response.json()["cart"]), 1)
-        self.assertEqual(float(cart_response.json()["price"]), self.rugs[0].price)
+        self.assertEqual(len(cart_response.json()["results"]), 1)
+
+        cart_price_response = self.client.get("/api/cart/price", HTTP_AUTHORIZATION=f"Token {token}")
+        self.assertEqual(float(cart_price_response.json()["price"]), self.rugs[0].price)
 
     def test_delete_from_cart(self):
         token = self.login_as_user(username=self.regular_user1.username, password="test")
@@ -148,8 +153,11 @@ class RugsViewTest(TestCase):
 
         cart_response = self.client.get("/api/cart", HTTP_AUTHORIZATION=f"Token {token}")
         self.assertEqual(cart_response.status_code, 200)
-        self.assertEqual(len(cart_response.json()["cart"]), 1)
-        self.assertEqual(float(cart_response.json()["price"]), self.rugs[2].price)
+
+        self.assertEqual(len(cart_response.json()["results"]), 1)
+
+        cart_price_response = self.client.get("/api/cart/price", HTTP_AUTHORIZATION=f"Token {token}")
+        self.assertEqual(float(cart_price_response.json()["price"]), self.rugs[2].price)
 
     def test_delete_entire_cart(self):
         token = self.login_as_user(username=self.regular_user1.username, password="test")
@@ -172,8 +180,11 @@ class RugsViewTest(TestCase):
 
         cart_response = self.client.get("/api/cart", HTTP_AUTHORIZATION=f"Token {token}")
         self.assertEqual(cart_response.status_code, 200)
-        self.assertEqual(len(cart_response.json()["cart"]), 0)
-        self.assertEqual(float(cart_response.json()["price"]), 0)
+
+        self.assertEqual(len(cart_response.json()["results"]), 0)
+
+        cart_price_response = self.client.get("/api/cart/price", HTTP_AUTHORIZATION=f"Token {token}")
+        self.assertEqual(float(cart_price_response.json()["price"]), 0)
 
     def test_place_order_no_rugs(self):
         token = self.login_as_user(username=self.regular_user1.username, password="test")
@@ -190,7 +201,7 @@ class RugsViewTest(TestCase):
 
     def test_get_order_by_id_not_authenticated(self):
         orders_response = self.client.get(f"/api/order/{self.orders[0].pk}")
-        self.assertEqual(orders_response.status_code, 403)
+        self.assertEqual(orders_response.status_code, 401)
 
     def test_get_order_by_id_wrong_user(self):
         token = self.login_as_user(username=self.regular_user2.username, password="test")
@@ -204,9 +215,19 @@ class RugsViewTest(TestCase):
         orders_response = self.client.get(f"/api/order/{self.orders[0].pk}", HTTP_AUTHORIZATION=f"Token {token}")
         self.assertEqual(orders_response.status_code, 200)
 
-        self.assertEqual(orders_response.json()["order"]["user"], self.regular_user1.pk)
-        self.assertEqual(orders_response.json()["rugs"][0]["id"], self.orders[0].rugs.first().pk)
-        self.assertEqual(orders_response.json()["order"]["status"], Order.OrderStatus.PENDING)
+        self.assertEqual(orders_response.json()["user"], self.regular_user1.pk)
+        self.assertEqual(orders_response.json()["status"], Order.OrderStatus.PENDING)
+
+    def test_get_rugs_by_order_wrong_user(self):
+        token = self.login_as_user(username=self.regular_user2.username, password="test")
+
+        rugs_response = self.client.get(f"/api/rug/by-order/{self.orders[0].pk}", HTTP_AUTHORIZATION=f"Token {token}")
+        self.assertEqual(rugs_response.status_code, 403)
+
+    def test_get_rugs_by_order_correct_user(self):
+        token = self.login_as_user(username=self.regular_user1.username, password="test")
+        rugs_response = self.client.get(f"/api/rug/by-order/{self.orders[0].pk}", HTTP_AUTHORIZATION=f"Token {token}")
+        self.assertEqual(rugs_response.json()["results"][0]["id"], self.orders[0].rugs.first().pk)
 
     def test_get_order_by_id_admin(self):
         token = self.login_as_user(username=self.superuser.username, password="admin")
@@ -245,8 +266,8 @@ class RugsViewTest(TestCase):
         orders_response = self.client.get(f"/api/order/{self.orders[0].pk}", HTTP_AUTHORIZATION=f"Token {token}")
         self.assertEqual(orders_response.status_code, 200)
 
-        self.assertEqual(orders_response.json()["order"]["status"], Order.OrderStatus.COMPLETE)
-        self.assertIsNotNone(orders_response.json()["order"]["date_completed"])
+        self.assertEqual(orders_response.json()["status"], Order.OrderStatus.COMPLETE)
+        self.assertIsNotNone(orders_response.json()["date_completed"])
 
     def test_modify_order_admin(self):
         token = self.login_as_user(username=self.superuser.username, password="admin")
@@ -261,8 +282,8 @@ class RugsViewTest(TestCase):
         orders_response = self.client.get(f"/api/order/{self.orders[0].pk}", HTTP_AUTHORIZATION=f"Token {token}")
         self.assertEqual(orders_response.status_code, 200)
 
-        self.assertEqual(orders_response.json()["order"]["status"], Order.OrderStatus.READY_FOR_PICKUP)
-        self.assertIsNotNone(orders_response.json()["order"]["date_ready"])
+        self.assertEqual(orders_response.json()["status"], Order.OrderStatus.READY_FOR_PICKUP)
+        self.assertIsNotNone(orders_response.json()["date_ready"])
 
     def test_delete_order_not_authenticated(self):
         delete_order_response = self.client.delete(f"/api/order/{self.orders[0].pk}")
