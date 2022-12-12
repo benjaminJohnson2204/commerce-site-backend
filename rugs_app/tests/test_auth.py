@@ -165,7 +165,7 @@ class AuthenticationViewTest(TestCase):
             HTTP_AUTHORIZATION=f"Token {token}"
         )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["password"], "Valid password")
+        self.assertEqual(response.json()["valid"], True)
 
     def test_invalid_verify_password(self):
         response = self.client.post(
@@ -184,4 +184,4 @@ class AuthenticationViewTest(TestCase):
             HTTP_AUTHORIZATION=f"Token {token}"
         )
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json()["password"], "Invalid password")
+        self.assertEqual(response.json()["valid"], 'False')

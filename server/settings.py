@@ -61,7 +61,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'knox',
-    'drf_yasg'
+    'drf_spectacular'
 ]
 
 MIDDLEWARE = [
@@ -105,6 +105,7 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.JSONParser',
         'rest_framework.parsers.FormParser',
     ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PAGINATION_CLASS': 'rugs_app.pagination.MyPagination',
     'PAGE_SIZE': 10
 }
@@ -113,15 +114,22 @@ REST_KNOX = {
     "USER_SERIALIZER": "rugs_app.views.UserSerializer"
 }
 
-SWAGGER_SETTINGS = {
-    'SECURITY_DEFINITIONS': {
-        'Bearer': {
-            'type': 'apiKey',
-            'name': 'Authorization',
-            'in': 'header'
-        }
-    }
+# SWAGGER_SETTINGS = {
+#     'SECURITY_DEFINITIONS': {
+#         'Bearer': {
+#             'type': 'apiKey',
+#             'name': 'Authorization',
+#             'in': 'header'
+#         }
+#     }
+# }
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'E-commerce Site API',
+    'DESCRIPTION': 'Documentation of API for my E-commerce website project',
+    'VERSION': '1.0.0',
 }
+
 
 ROOT_URLCONF = 'server.urls'
 

@@ -11,10 +11,12 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiResponse, OpenApiParameter
 from knox.models import AuthToken
 from rest_framework import generics, serializers
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
+from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.generics import GenericAPIView
 from rest_framework.parsers import JSONParser, FormParser
@@ -25,7 +27,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission
     DjangoObjectPermissions
 from .models import User, Order, Rug
 
-from .serializer import RegisterSerializer, UserSerializer, RugSerializer, OrderSerializer
+from .serializer import RegisterSerializer, UserSerializer, RugSerializer, OrderSerializer, VerifyPasswordSerializer, \
+    CartSizeSerializer, VerifyPassword, CartSize, VerifyPasswordRequestSerializer
 from django.conf import settings
 
 
@@ -39,6 +42,13 @@ class ReadOnly(BasePermission):
         return request.method in SAFE_METHODS
 
 
+@extend_schema_view(
+    post=extend_schema(
+        tags=["Register"],
+        description="Registers a new user and returns their token",
+        responses=AuthTokenSerializer
+    )
+)
 class RegisterUserView(generics.CreateAPIView):
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
@@ -65,6 +75,11 @@ class LoginUserView(APIView):
     permission_classes = (AllowAny,)
     serializer_class = UserSerializer
 
+    @extend_schema(
+        tags=["Login"],
+        description="Logs a user in and returns their token",
+        responses=AuthTokenSerializer
+    )
     def post(self, request):
         user = authenticate(request, **request.data)
         if user is not None:
@@ -77,27 +92,56 @@ class LoginUserView(APIView):
         })
 
 
+@extend_schema(
+    tags=["Logout"],
+    description="Logs a user out"
+)
+class LogoutUserView(knox.views.LogoutView):
+    serializer_class = None
+
+
 class VerifyPasswordView(APIView):
     permission_classes = (IsAuthenticated,)
+    serializer_class = VerifyPasswordRequestSerializer
 
+    @extend_schema(
+        tags=["Verify Password"],
+        description="Takes a user's inputted password and verifies that it is truly their password",
+        responses=VerifyPasswordSerializer
+    )
     def post(self, request):
         user = authenticate(request, username=request.user.username, password=request.data.get("password"))
         if user is not None:
-            return JsonResponse({"password": "Valid password"}, status=200)
-        return JsonResponse({"password": "Invalid password"}, status=400)
+            verify_password = VerifyPasswordSerializer(VerifyPassword(valid=True))
+            return Response(verify_password.data)
+        raise serializers.ValidationError({
+            "valid": False
+        })
 
 
-class AuthenticatedView(APIView):
+class AuthenticatedView(GenericAPIView):
     permission_classes = (IsAuthenticated,)
+    serializer_class = UserSerializer
 
+    @extend_schema(
+        tags=["Authenticated"],
+        description="Returns the user if they are authenticated",
+        request=None
+    )
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
 
 
-class AdminView(APIView):
+class AdminView(GenericAPIView):
     permission_classes = (IsAdminUser,)
+    serializer_class = UserSerializer
 
+    @extend_schema(
+        tags=["Admin"],
+        description="Returns the user if they are an admin user",
+        request=None
+    )
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
@@ -105,7 +149,12 @@ class AdminView(APIView):
 
 class UserView(APIView):
     permission_classes = (IsAuthenticated,)
+    serializer_class = UserSerializer
 
+    @extend_schema(
+        tags=["User"],
+        description="Updates a user's email preferences"
+    )
     def patch(self, request, *args, **kwargs):
         try:
             request.user.receive_emails_new_rugs = request.data["receive_emails_new_rugs"]
@@ -115,6 +164,9 @@ class UserView(APIView):
             return JsonResponse({"error": "Could not update email preferences"}, status=400)
 
 
+@extend_schema(
+    tags=["Rugs"]
+)
 class RugsListView(generics.ListCreateAPIView):
     permission_classes = (IsAdminUser | ReadOnly,)
     queryset = Rug.objects.all()
@@ -124,13 +176,50 @@ class RugsListView(generics.ListCreateAPIView):
     search_fields = ["title", "description"]  # <url>?search=<search>
     ordering_fields = ["title", "price"]  # <url>?ordering=title, use ordering=-title for descending
 
+    @extend_schema(
+        description="Gets all available rugs, with options for "
+                    "searching, filtering, and sorting",
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
+    @extend_schema(
+        description="Create a new rug (must be admin)"
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+
+
+@extend_schema(
+    tags=["Rugs"]
+)
 class RugsDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (IsAdminUser | ReadOnly,)
     queryset = Rug.objects.all()
     serializer_class = RugSerializer
 
+    @extend_schema(
+        description="Gets a certain rug by its ID"
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
+    @extend_schema(
+        description="Update a rug (must be admin)"
+    )
+    def patch(self, request, *args, **kwargs):
+        return super().patch(request, *args, **kwargs)
+
+    @extend_schema(
+        description="Delete a rug (must be admin)"
+    )
+    def delete(self, request, *args, **kwargs):
+        return super().delete(request, *args, **kwargs)
+
+
+@extend_schema(
+    tags=["Orders"],
+)
 class OrderListView(generics.ListCreateAPIView):
     permission_classes = (IsAuthenticated,)
     queryset = Order.objects.all()
@@ -141,7 +230,17 @@ class OrderListView(generics.ListCreateAPIView):
             return super().get_queryset()
         return self.queryset.filter(user=self.request.user)
 
-    def create(self, request, *args, **kwargs):
+    @extend_schema(
+        description="Gets all a user's orders, or all existing orders for an admin user"
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    @extend_schema(
+        tags=["Orders"],
+        description="Create an order of all rugs in the user's cart, and clears the cart"
+    )
+    def post(self, request, *args, **kwargs):
         for rug in request.user.cart.all():
             if not rug:
                 print("non existent rug")
@@ -173,11 +272,17 @@ class OrderListView(generics.ListCreateAPIView):
         return JsonResponse(serializer.errors, status=400)
 
 
+@extend_schema(
+    tags=["Orders"],
+)
 class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (IsAdminOrOwnsOrder,)
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
 
+    @extend_schema(
+        description="Gets an order by its ID; only allowed if it is the user's order or the user is an admin"
+    )
     def get(self, request, pk):
         try:
             order = Order.objects.get(pk=pk)
@@ -194,6 +299,10 @@ class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
             "rugs": rugs_serializer.data
         })
 
+    @extend_schema(
+        description="Updates an order by its ID; only allowed if it is the user's order or the user is an admin"
+    )
+    @action(detail=True, methods=["put"])
     def partial_update(self, request, *args, **kwargs):
         if "status" in request.data:
             status = request.data.get("status")
@@ -205,7 +314,16 @@ class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
             order.save()
         return super().partial_update(request, *args, **kwargs)
 
+    @extend_schema(
+        description="Deletes an order by its ID; only allowed if it is the user's order or the user is an admin"
+    )
+    def delete(self, request, *args, **kwargs):
+        return super().delete(request, *args, **kwargs)
 
+
+@extend_schema(
+    tags=["Cart"]
+)
 class CartListView(generics.ListAPIView):
     permission_classes = (IsAuthenticated,)
     queryset = Rug.objects.all()
@@ -214,6 +332,9 @@ class CartListView(generics.ListAPIView):
     def get_queryset(self):
         return self.request.user.cart.all()
 
+    @extend_schema(
+        description="Gets all rugs in a user's cart, along with the total price of the rugs"
+    )
     def get(self, request, *args, **kwargs):
         serializer = RugSerializer(self.get_queryset(), many=True)
         return JsonResponse({
@@ -221,6 +342,9 @@ class CartListView(generics.ListAPIView):
             "price": sum(rug.price for rug in request.user.cart.all())
         })
 
+    @extend_schema(
+        description="Add a rug to the user's cart"
+    )
     def post(self, request):
         rug = Rug.objects.get(pk=request.data.get("rug"))
         if not rug:
@@ -235,12 +359,19 @@ class CartListView(generics.ListAPIView):
         request.user.save()
         return JsonResponse("Successfully added to cart", status=201, safe=False)
 
+    @extend_schema(
+        operation_id="api_cart_destroy_all",
+        description="Deletes all rugs from the user's cart"
+    )
     def delete(self, request):
         request.user.cart.clear()
         request.user.save()
         return JsonResponse({}, status=204)
 
 
+@extend_schema(
+    tags=["Cart"]
+)
 class CartDetailView(generics.RetrieveAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = RugSerializer
@@ -248,6 +379,16 @@ class CartDetailView(generics.RetrieveAPIView):
     def get_queryset(self):
         return self.request.user.cart.all()
 
+    @extend_schema(
+        description="Gets a rug from the user's cart by ID"
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    @extend_schema(
+        operation_id="api_cart_destroy_one",
+        description="Deletes a rug from the user's cart by ID"
+    )
     def delete(self, request, pk):
         rug = Rug.objects.get(pk=pk)
         if not rug:
@@ -261,6 +402,14 @@ class CartDetailView(generics.RetrieveAPIView):
 
 class CartSizeView(APIView):
     permission_classes = (IsAuthenticated,)
+    serializer_class = CartSizeSerializer
 
+    @extend_schema(
+        tags=["Cart Size"],
+        description="Gets the number of rugs currently in the user's cart"
+    )
     def get(self, request):
-        return Response(request.user.cart.count())
+        cart_size = CartSizeSerializer(CartSize(
+            size=request.user.cart.count()
+        ))
+        return Response(cart_size.data)

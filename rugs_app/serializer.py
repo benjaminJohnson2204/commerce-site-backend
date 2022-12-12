@@ -85,3 +85,25 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = "__all__"
+
+
+class VerifyPassword:
+    def __init__(self, valid):
+        self.valid = valid
+
+
+class VerifyPasswordSerializer(serializers.Serializer):
+    valid = serializers.BooleanField()
+
+
+class VerifyPasswordRequestSerializer(serializers.Serializer):
+    password = serializers.CharField(max_length=128)
+
+
+class CartSize:
+    def __init__(self, size):
+        self.size = size
+
+
+class CartSizeSerializer(serializers.Serializer):
+    size = serializers.IntegerField()

@@ -1,0 +1,1 @@
+from rugs_app.auth_extension import AuthenticationScheme

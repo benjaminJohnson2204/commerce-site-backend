@@ -1,0 +1,990 @@
+openapi: 3.0.3
+info:
+  title: E-commerce Site API
+  version: 1.0.0
+  description: Documentation of API for my E-commerce website project
+paths:
+  /api/admin:
+    get:
+      operationId: api_admin_retrieve
+      description: Returns the user if they are an admin user
+      tags:
+      - Admin
+      security:
+      - TokenAuthentication: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/authenticated:
+    get:
+      operationId: api_authenticated_retrieve
+      description: Returns the user if they are authenticated
+      tags:
+      - Authenticated
+      security:
+      - TokenAuthentication: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/cart:
+    get:
+      operationId: api_cart_list
+      description: Gets all rugs in a user's cart, along with the total price of the
+        rugs
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Cart
+      security:
+      - TokenAuthentication: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRugList'
+          description: ''
+    post:
+      operationId: api_cart_create
+      description: Add a rug to the user's cart
+      tags:
+      - Cart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Rug'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Rug'
+        required: true
+      security:
+      - TokenAuthentication: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rug'
+          description: ''
+    delete:
+      operationId: api_cart_destroy_all
+      description: Deletes all rugs from the user's cart
+      tags:
+      - Cart
+      security:
+      - TokenAuthentication: []
+      responses:
+        '204':
+          description: No response body
+  /api/cart/{id}:
+    get:
+      operationId: api_cart_retrieve
+      description: Gets a rug from the user's cart by ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Cart
+      security:
+      - TokenAuthentication: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rug'
+          description: ''
+    delete:
+      operationId: api_cart_destroy_one
+      description: Deletes a rug from the user's cart by ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Cart
+      security:
+      - TokenAuthentication: []
+      responses:
+        '204':
+          description: No response body
+  /api/cart/size:
+    get:
+      operationId: api_cart_size_retrieve
+      description: Gets the number of rugs currently in the user's cart
+      tags:
+      - Cart Size
+      security:
+      - TokenAuthentication: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartSize'
+          description: ''
+  /api/login:
+    post:
+      operationId: api_login_create
+      description: Logs a user in and returns their token
+      tags:
+      - Login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - TokenAuthentication: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+          description: ''
+  /api/logout:
+    post:
+      operationId: api_logout_create
+      description: Logs a user out
+      tags:
+      - Logout
+      security:
+      - TokenAuthentication: []
+      responses:
+        '200':
+          description: No response body
+  /api/order:
+    get:
+      operationId: api_order_list
+      description: Gets all a user's orders, or all existing orders for an admin user
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Orders
+      security:
+      - TokenAuthentication: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderList'
+          description: ''
+    post:
+      operationId: api_order_create
+      description: Create an order of all rugs in the user's cart, and clears the
+        cart
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Order'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Order'
+        required: true
+      security:
+      - TokenAuthentication: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /api/order/{id}:
+    get:
+      operationId: api_order_retrieve
+      description: Gets an order by its ID; only allowed if it is the user's order
+        or the user is an admin
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Orders
+      security:
+      - TokenAuthentication: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+    put:
+      operationId: api_order_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Order'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Order'
+        required: true
+      security:
+      - TokenAuthentication: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+    patch:
+      operationId: api_order_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedOrder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedOrder'
+      security:
+      - TokenAuthentication: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+    delete:
+      operationId: api_order_destroy
+      description: Deletes an order by its ID; only allowed if it is the user's order
+        or the user is an admin
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Orders
+      security:
+      - TokenAuthentication: []
+      responses:
+        '204':
+          description: No response body
+  /api/register:
+    post:
+      operationId: api_register_create
+      description: Registers a new user and returns their token
+      tags:
+      - Register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Register'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Register'
+        required: true
+      security:
+      - TokenAuthentication: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+          description: ''
+  /api/rug:
+    get:
+      operationId: api_rug_list
+      description: Gets all available rugs, with options for searching, filtering,
+        and sorting
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - av
+          - na
+      tags:
+      - Rugs
+      security:
+      - TokenAuthentication: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRugList'
+          description: ''
+    post:
+      operationId: api_rug_create
+      description: Create a new rug (must be admin)
+      tags:
+      - Rugs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Rug'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Rug'
+        required: true
+      security:
+      - TokenAuthentication: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rug'
+          description: ''
+  /api/rug/{id}:
+    get:
+      operationId: api_rug_retrieve
+      description: Gets a certain rug by its ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Rugs
+      security:
+      - TokenAuthentication: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rug'
+          description: ''
+    put:
+      operationId: api_rug_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Rugs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Rug'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Rug'
+        required: true
+      security:
+      - TokenAuthentication: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rug'
+          description: ''
+    patch:
+      operationId: api_rug_partial_update
+      description: Update a rug (must be admin)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Rugs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRug'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRug'
+      security:
+      - TokenAuthentication: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rug'
+          description: ''
+    delete:
+      operationId: api_rug_destroy
+      description: Delete a rug (must be admin)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Rugs
+      security:
+      - TokenAuthentication: []
+      responses:
+        '204':
+          description: No response body
+  /api/schema/:
+    get:
+      operationId: api_schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - af
+          - ar
+          - ar-dz
+          - ast
+          - az
+          - be
+          - bg
+          - bn
+          - br
+          - bs
+          - ca
+          - cs
+          - cy
+          - da
+          - de
+          - dsb
+          - el
+          - en
+          - en-au
+          - en-gb
+          - eo
+          - es
+          - es-ar
+          - es-co
+          - es-mx
+          - es-ni
+          - es-ve
+          - et
+          - eu
+          - fa
+          - fi
+          - fr
+          - fy
+          - ga
+          - gd
+          - gl
+          - he
+          - hi
+          - hr
+          - hsb
+          - hu
+          - hy
+          - ia
+          - id
+          - ig
+          - io
+          - is
+          - it
+          - ja
+          - ka
+          - kab
+          - kk
+          - km
+          - kn
+          - ko
+          - ky
+          - lb
+          - lt
+          - lv
+          - mk
+          - ml
+          - mn
+          - mr
+          - ms
+          - my
+          - nb
+          - ne
+          - nl
+          - nn
+          - os
+          - pa
+          - pl
+          - pt
+          - pt-br
+          - ro
+          - ru
+          - sk
+          - sl
+          - sq
+          - sr
+          - sr-latn
+          - sv
+          - sw
+          - ta
+          - te
+          - tg
+          - th
+          - tk
+          - tr
+          - tt
+          - udm
+          - uk
+          - ur
+          - uz
+          - vi
+          - zh-hans
+          - zh-hant
+      tags:
+      - api
+      security:
+      - TokenAuthentication: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/user:
+    patch:
+      operationId: api_user_partial_update
+      description: Updates a user's email preferences
+      tags:
+      - User
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+      - TokenAuthentication: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/verify-password:
+    post:
+      operationId: api_verify_password_create
+      description: Takes a user's inputted password and verifies that it is truly
+        their password
+      tags:
+      - Verify Password
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyPasswordRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VerifyPasswordRequest'
+        required: true
+      security:
+      - TokenAuthentication: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyPassword'
+          description: ''
+components:
+  schemas:
+    AuthToken:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        token:
+          type: string
+          readOnly: true
+      required:
+      - password
+      - token
+      - username
+    CartSize:
+      type: object
+      properties:
+        size:
+          type: integer
+      required:
+      - size
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        date_placed:
+          type: string
+          format: date-time
+          readOnly: true
+        date_ready:
+          type: string
+          format: date-time
+          nullable: true
+        date_completed:
+          type: string
+          format: date-time
+          nullable: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/OrderStatusEnum'
+        user:
+          type: integer
+        rugs:
+          type: array
+          items:
+            type: integer
+      required:
+      - date_placed
+      - id
+      - price
+      - rugs
+      - user
+    OrderStatusEnum:
+      enum:
+      - pe
+      - re
+      - co
+      type: string
+    PaginatedOrderList:
+      type: object
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+    PaginatedRugList:
+      type: object
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Rug'
+    PatchedOrder:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        date_placed:
+          type: string
+          format: date-time
+          readOnly: true
+        date_ready:
+          type: string
+          format: date-time
+          nullable: true
+        date_completed:
+          type: string
+          format: date-time
+          nullable: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/OrderStatusEnum'
+        user:
+          type: integer
+        rugs:
+          type: array
+          items:
+            type: integer
+    PatchedRug:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        date_created:
+          type: string
+          format: date-time
+          readOnly: true
+        title:
+          type: string
+          maxLength: 64
+        description:
+          type: string
+          maxLength: 1024
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        image_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 256
+        status:
+          $ref: '#/components/schemas/RugStatusEnum'
+    PatchedUser:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        password:
+          type: string
+          maxLength: 128
+        orders:
+          type: array
+          items:
+            type: integer
+        receive_emails_new_rugs:
+          type: boolean
+    Register:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        password:
+          type: string
+          maxLength: 128
+        receive_emails_order_updates:
+          type: boolean
+        receive_emails_new_rugs:
+          type: boolean
+      required:
+      - password
+      - username
+    Rug:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        date_created:
+          type: string
+          format: date-time
+          readOnly: true
+        title:
+          type: string
+          maxLength: 64
+        description:
+          type: string
+          maxLength: 1024
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        image_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 256
+        status:
+          $ref: '#/components/schemas/RugStatusEnum'
+      required:
+      - date_created
+      - description
+      - id
+      - price
+      - title
+    RugStatusEnum:
+      enum:
+      - av
+      - na
+      type: string
+    User:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        password:
+          type: string
+          maxLength: 128
+        orders:
+          type: array
+          items:
+            type: integer
+        receive_emails_new_rugs:
+          type: boolean
+      required:
+      - orders
+      - password
+      - username
+    VerifyPassword:
+      type: object
+      properties:
+        valid:
+          type: boolean
+      required:
+      - valid
+    VerifyPasswordRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          maxLength: 128
+      required:
+      - password
+  securitySchemes:
+    TokenAuthentication:
+      type: apiKey
+      name: Authorization
+      in: header
