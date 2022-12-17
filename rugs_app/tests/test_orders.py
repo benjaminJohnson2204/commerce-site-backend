@@ -19,8 +19,8 @@ class RugsViewTest(TestCase):
         cls.regular_user2 = User.objects.create_user(username="test2", email="test2@gmail.com", password="test")
 
         cls.orders = [
-            Order.objects.create(user=cls.regular_user1, price=cls.rugs[1].price),
-            Order.objects.create(user=cls.regular_user2, price=cls.rugs[3].price)
+            Order.objects.create(user=cls.regular_user1, rug_count=1, price=cls.rugs[1].price),
+            Order.objects.create(user=cls.regular_user2, rug_count=1, price=cls.rugs[3].price)
         ]
         cls.orders[0].rugs.add(cls.rugs[1])
         cls.orders[1].rugs.add(cls.rugs[3])
@@ -55,15 +55,17 @@ class RugsViewTest(TestCase):
         self.assertEqual(orders_response.status_code, 200)
         self.assertEqual(orders_response.json()["count"], 2)
 
-        self.assertEqual(orders_response.json()["results"][0]["user"], self.regular_user2.pk)
-        self.assertEqual(len(orders_response.json()["results"][0]["rugs"]), 1)
-        self.assertEqual(orders_response.json()["results"][0]["rugs"][0], self.rugs[3].pk)
-        self.assertEqual(orders_response.json()["results"][0]["status"], Order.OrderStatus.PENDING)
+        results = orders_response.json()["results"]
+        order_1 = results[0] if results[0]["user"] == self.regular_user1.pk else results[1]
+        order_2 = results[0] if results[0]["user"] == self.regular_user2.pk else results[1]
 
-        self.assertEqual(orders_response.json()["results"][1]["user"], self.regular_user1.pk)
-        self.assertEqual(len(orders_response.json()["results"][1]["rugs"]), 1)
-        self.assertEqual(orders_response.json()["results"][1]["rugs"][0], self.rugs[1].pk)
-        self.assertEqual(orders_response.json()["results"][1]["status"], Order.OrderStatus.PENDING)
+        self.assertEqual(len(order_2["rugs"]), 1)
+        self.assertEqual(order_2["rugs"][0], self.rugs[3].pk)
+        self.assertEqual(order_2["status"], Order.OrderStatus.PENDING)
+
+        self.assertEqual(len(order_1["rugs"]), 1)
+        self.assertEqual(order_1["rugs"][0], self.rugs[1].pk)
+        self.assertEqual(order_1["status"], Order.OrderStatus.PENDING)
 
     def test_place_order_not_authenticated(self):
         add_to_cart_response = self.client.post(
@@ -109,6 +111,7 @@ class RugsViewTest(TestCase):
         self.assertEqual(orders_response.status_code, 200)
         self.assertEqual(orders_response.json()["count"], 2)
         self.assertEqual(len(orders_response.json()["results"][1]["rugs"]), 1)
+        self.assertEqual(orders_response.json()["results"][1]["rug_count"], 1)
 
         ordered_rug = Rug.objects.get(pk=orders_response.json()["results"][1]["rugs"][0])
         self.assertEqual(ordered_rug.status, Rug.RugStatus.NOT_AVAILABLE)
@@ -216,6 +219,7 @@ class RugsViewTest(TestCase):
         self.assertEqual(orders_response.status_code, 200)
 
         self.assertEqual(orders_response.json()["user"], self.regular_user1.pk)
+        self.assertEqual(orders_response.json()["rug_count"], 1)
         self.assertEqual(orders_response.json()["status"], Order.OrderStatus.PENDING)
 
     def test_get_rugs_by_order_wrong_user(self):

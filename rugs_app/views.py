@@ -224,6 +224,9 @@ class OrderListView(generics.ListCreateAPIView):
     permission_classes = (IsAuthenticated,)
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
+    filterset_fields = ["status"]
+    ordering_fields = ["date_placed", "status", "price", "rug_count"]
 
     def get_queryset(self):
         if self.request.user.is_staff:
@@ -257,6 +260,7 @@ class OrderListView(generics.ListCreateAPIView):
         serializer = OrderSerializer(data={
             "user": request.user.pk,
             "rugs": [rug.pk for rug in request.user.cart.all()],
+            "rug_count": request.user.cart.count(),
             "price": sum(rug.price for rug in request.user.cart.all())
         })
         if serializer.is_valid():

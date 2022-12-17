@@ -182,12 +182,32 @@ paths:
       operationId: api_order_list
       description: Gets all a user's orders, or all existing orders for an admin user
       parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
       - name: page
         required: false
         in: query
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - co
+          - pe
+          - re
       tags:
       - Orders
       security:
@@ -763,6 +783,8 @@ components:
           type: string
           format: date-time
           nullable: true
+        rug_count:
+          type: integer
         price:
           type: string
           format: decimal
@@ -779,6 +801,7 @@ components:
       - date_placed
       - id
       - price
+      - rug_count
       - rugs
       - user
     OrderStatusEnum:
@@ -845,6 +868,8 @@ components:
           type: string
           format: date-time
           nullable: true
+        rug_count:
+          type: integer
         price:
           type: string
           format: decimal
