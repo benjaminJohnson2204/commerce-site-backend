@@ -42,6 +42,10 @@ class ReadOnly(BasePermission):
         return request.method in SAFE_METHODS
 
 
+def index(request):
+    return render(request, "rugs_app/index.html")
+
+
 @extend_schema_view(
     post=extend_schema(
         tags=["Register"],

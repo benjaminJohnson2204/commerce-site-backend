@@ -17,6 +17,8 @@ from django.contrib import admin
 from django.shortcuts import render
 from django.urls import path, include, re_path
 
+import rugs_app
+
 
 def index(request):
     return render(request, "index.html", {})
@@ -25,4 +27,5 @@ def index(request):
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('rugs_app.urls')),
+    path('', rugs_app.views.index, name='index')
 ]
