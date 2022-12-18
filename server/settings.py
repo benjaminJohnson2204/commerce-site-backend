@@ -39,9 +39,9 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", get_random_secret_key())
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", env('DEBUG')) == "True"
+DEBUG = os.getenv("DEBUG", env('DEBUG') or "False") == "True"
 
-DEVELOPMENT_MODE = os.getenv("DEVELOPMENT_MODE", env('DEVELOPMENT_MODE')) == "True"
+DEVELOPMENT_MODE = os.getenv("DEVELOPMENT_MODE", env('DEVELOPMENT_MODE' or "False")) == "True"
 
 ALLOWED_HOSTS = [
     os.getenv("DJANGO_ALLOWED_HOST", "localhost")
