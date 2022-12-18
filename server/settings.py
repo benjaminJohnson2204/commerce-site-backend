@@ -169,8 +169,8 @@ else:
             'ENGINE': 'dj_db_conn_pool.backends.postgresql',
             **dj_database_url.parse(os.environ.get("DATABASE_URL")),
             'POOL_OPTIONS': {
-                'POOL_SIZE': 5,
-                'MAX_OVERFLOW': 0,
+                'POOL_SIZE': 2,
+                'MAX_OVERFLOW': 1,
             }
         }
     }
