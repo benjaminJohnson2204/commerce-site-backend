@@ -81,7 +81,7 @@ CSRF_TRUSTED_ORIGINS = [
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_WHITELIST = (
-  'http://localhost:3000',
+  os.getenv('FRONTEND_URL', 'http://localhost:3000'),
 )
 
 AUTHENTICATION_BACKENDS = (
