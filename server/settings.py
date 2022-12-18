@@ -165,7 +165,14 @@ else:
     if os.getenv("DATABASE_URL", None) is None:
         raise Exception("DATABASE_URL environment variable not defined")
     DATABASES = {
-        "default": dj_database_url.parse(os.environ.get("DATABASE_URL")),
+        "default": {
+            'ENGINE': 'dj_db_conn_pool.backends.postgresql',
+            **dj_database_url.parse(os.environ.get("DATABASE_URL")),
+            'POOL_OPTIONS': {
+                'POOL_SIZE': 5,
+                'MAX_OVERFLOW': 0,
+            }
+        }
     }
 
 AUTH_USER_MODEL = 'rugs_app.User'
