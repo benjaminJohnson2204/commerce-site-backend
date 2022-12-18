@@ -190,6 +190,9 @@ class RugsListView(generics.ListCreateAPIView):
         return super().post(request, *args, **kwargs)
 
 
+RugsListView.pagination_class.page_size = 8
+
+
 @extend_schema(
     tags=["Rugs"]
 )
