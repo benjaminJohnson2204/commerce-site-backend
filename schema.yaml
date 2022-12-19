@@ -949,11 +949,16 @@ components:
         password:
           type: string
           maxLength: 128
+        confirmation:
+          type: string
+          writeOnly: true
+          maxLength: 128
         receive_emails_order_updates:
           type: boolean
         receive_emails_new_rugs:
           type: boolean
       required:
+      - confirmation
       - password
       - username
     Rug:

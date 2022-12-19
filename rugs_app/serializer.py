@@ -13,10 +13,11 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class RegisterSerializer(serializers.ModelSerializer):
+    confirmation = serializers.CharField(max_length=128, write_only=True)
 
     class Meta:
         model = User
-        fields = ["username", "email", "password", "receive_emails_order_updates", "receive_emails_new_rugs"]
+        fields = ["username", "email", "password", "confirmation", "receive_emails_order_updates", "receive_emails_new_rugs"]
 
     def validate(self, attrs):
         # Ensure that username, email, password, and confirmation are provided
